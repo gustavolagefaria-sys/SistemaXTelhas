@@ -1,0 +1,157 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Perfil de acesso ─────────────────────────────────────────────────────────
+enum Perfil {
+  ADMIN
+  USUARIO
+}
+
+// ─── Empresa ──────────────────────────────────────────────────────────────────
+model Empresa {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  cnpj     String?  @unique
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  usuarios     Usuario[]
+  tiposDespesa TipoDespesa[]
+  despesas     Despesa[]
+  pedidos      Pedido[]
+
+  @@map("empresas")
+}
+
+// ─── Usuário ──────────────────────────────────────────────────────────────────
+model Usuario {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  email       String   @unique
+  senhaHash   String   @map("senha_hash")
+  perfil      Perfil   @default(USUARIO)
+  ativo       Boolean  @default(true)
+  empresaId   Int      @map("empresa_id")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+  ultimoLogin DateTime? @map("ultimo_login")
+
+  empresa  Empresa   @relation(fields: [empresaId], references: [id])
+  despesas Despesa[]
+  pedidos  Pedido[]
+  sessoes  Sessao[]
+  tokens   TokenRecuperacao[]
+  logs     LogAtividade[]
+
+  @@map("usuarios")
+}
+
+// ─── Sessão ───────────────────────────────────────────────────────────────────
+model Sessao {
+  id         String   @id @default(uuid())
+  usuarioId  Int      @map("usuario_id")
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  criadaEm   DateTime @default(now()) @map("criada_em")
+  expiresAt  DateTime @map("expires_at")
+  ativa      Boolean  @default(true)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("sessoes")
+}
+
+// ─── Token de Recuperação de Senha ───────────────────────────────────────────
+model TokenRecuperacao {
+  id        String   @id @default(uuid())
+  usuarioId Int      @map("usuario_id")
+  token     String   @unique
+  usado     Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("tokens_recuperacao")
+}
+
+// ─── Log de Atividade ─────────────────────────────────────────────────────────
+model LogAtividade {
+  id           Int      @id @default(autoincrement())
+  usuarioId    Int      @map("usuario_id")
+  tipoAcao     String   @map("tipo_acao")    // CREATE | UPDATE | DELETE | LOGIN | LOGOUT
+  entidade     String                          // despesas | pedidos | usuarios | etc.
+  registroId   String?  @map("registro_id")
+  descricao    String?
+  dadosAntes   Json?    @map("dados_antes")
+  dadosDepois  Json?    @map("dados_depois")
+  ip           String?
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("logs_atividade")
+}
+
+// ─── Tipo de Despesa ──────────────────────────────────────────────────────────
+model TipoDespesa {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  empresaId Int?     @map("empresa_id")
+  isSistema Boolean  @default(false) @map("is_sistema")
+  ativo     Boolean  @default(true)
+
+  empresa  Empresa?  @relation(fields: [empresaId], references: [id])
+  despesas Despesa[]
+
+  @@map("tipos_despesa")
+}
+
+// ─── Despesa ──────────────────────────────────────────────────────────────────
+model Despesa {
+  id             Int      @id @default(autoincrement())
+  empresaId      Int      @map("empresa_id")
+  tipoId         Int      @map("tipo_id")
+  criadoPorId    Int      @map("criado_por_id")
+  descricao      String?
+  unidadeMedida  String?  @map("unidade_medida")
+  quantidade     Decimal? @db.Decimal(12, 3)
+  precoUnitario  Decimal? @map("preco_unitario") @db.Decimal(12, 2)
+  valor          Decimal  @db.Decimal(12, 2)
+  dataLancamento DateTime @map("data_lancamento") @db.Date
+  mesRef         String   @map("mes_ref")
+  criadoEm       DateTime @default(now()) @map("criado_em")
+
+  empresa   Empresa     @relation(fields: [empresaId], references: [id])
+  tipo      TipoDespesa @relation(fields: [tipoId], references: [id])
+  criadoPor Usuario     @relation(fields: [criadoPorId], references: [id])
+
+  @@map("despesas")
+}
+
+// ─── Pedido ───────────────────────────────────────────────────────────────────
+model Pedido {
+  id           Int      @id @default(autoincrement())
+  empresaId    Int      @map("empresa_id")
+  criadoPorId  Int      @map("criado_por_id")
+  numeroPedido String   @map("numero_pedido")
+  valorTotal   Decimal  @map("valor_total")  @db.Decimal(12, 2)
+  custoBruto   Decimal? @map("custo_bruto")  @db.Decimal(12, 2)
+  nfEmitida    Boolean  @default(false)      @map("nf_emitida")
+  valorNf      Decimal? @map("valor_nf")     @db.Decimal(12, 2)
+  numeroNf     String?  @map("numero_nf")
+  dataEmissao  DateTime @map("data_emissao") @db.Date
+  mesRef       String   @map("mes_ref")
+  criadoEm     DateTime @default(now())      @map("criado_em")
+
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id])
+
+  @@map("pedidos")
+}

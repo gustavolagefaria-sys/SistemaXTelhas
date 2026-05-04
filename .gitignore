@@ -1,0 +1,24 @@
+# dependências
+node_modules/
+.pnp
+.pnp.js
+
+# build
+.next/
+out/
+build/
+
+# variáveis de ambiente — NUNCA commitar este arquivo!
+.env
+.env.local
+.env.*.local
+
+# Prisma
+prisma/migrations/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# logs
+npm-debug.log*
