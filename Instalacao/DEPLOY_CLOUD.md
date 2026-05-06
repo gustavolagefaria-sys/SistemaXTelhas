@@ -100,7 +100,7 @@ git push origin main
 
 Após o build concluir (2–3 minutos), a Vercel fornecerá uma URL como:
 ```
-https://sistema-xtelhas.vercel.app
+https://sistema-x-telhas.vercel.app
 ```
 
 Acesse a URL e faça login com as credenciais do seed.
