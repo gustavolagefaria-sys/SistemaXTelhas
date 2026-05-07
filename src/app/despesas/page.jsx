@@ -4,16 +4,6 @@ import { useState, useEffect } from "react";
 import { Picker, CalDia, CalMes, dataHoje, toISO, toMesRef, labelDataBR, labelMesRef } from "@/components/DatePicker";
 import { mascaraMoeda, mascaraQtd, parseMoeda, parseQtd, fmt } from "@/lib/money";
 
-const TIPOS_DESPESA = [
-  { id:1,  nome:"Materiais"              }, { id:2,  nome:"Salário"                },
-  { id:3,  nome:"Alimentação"            }, { id:4,  nome:"Aluguel"                },
-  { id:5,  nome:"Energia"                }, { id:6,  nome:"Frete"                  },
-  { id:7,  nome:"Internet"               }, { id:8,  nome:"Marketing"              },
-  { id:9,  nome:"Seguradora"             }, { id:10, nome:"Bancos"                 },
-  { id:11, nome:"Manutenção de máquinas" }, { id:12, nome:"Manutenção de veículos" },
-  { id:13, nome:"Retiradas"              }, { id:14, nome:"Serviços"               },
-  { id:15, nome:"Rescisão contratual"    }, { id:16, nome:"Outros"                 },
-];
 
 const UNIDADES = [
   { sigla:"KG",nome:"Quilograma" },{ sigla:"UN",nome:"Unidade"      },
@@ -53,14 +43,23 @@ export default function DespesasPage() {
   const [apiErr,    setApiErr]    = useState("");
   const [lista,     setLista]     = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [confirmId, setConfirmId] = useState(null);
-  const [deleting,  setDeleting]  = useState(false);
+  const [confirmId,    setConfirmId]    = useState(null);
+  const [deleting,     setDeleting]     = useState(false);
+  const [tiposDespesa, setTiposDespesa] = useState([]);
 
-  const tipoObj    = TIPOS_DESPESA.find(t => t.id === Number(tipo));
+  const tipoObj    = tiposDespesa.find(t => t.id === Number(tipo));
   const isMaterial = tipoObj?.nome === "Materiais";
   const isOutros   = tipoObj?.nome === "Outros";
   const isRetirada = tipoObj?.nome === "Retiradas";
   const totalMat   = isMaterial ? parseQtd(qtdRaw) * parseMoeda(precoRaw) : 0;
+
+  async function carregarTipos() {
+    try {
+      const res  = await fetch(`/api/tipos-despesa?empresa_id=${EMPRESA_ID}`);
+      const data = await res.json();
+      setTiposDespesa(Array.isArray(data) ? data : []);
+    } catch { setTiposDespesa([]); }
+  }
 
   async function carregar(mr) {
     setLoading(true);
@@ -72,6 +71,7 @@ export default function DespesasPage() {
     setLoading(false);
   }
 
+  useEffect(() => { carregarTipos(); }, []);
   useEffect(() => { carregar(mesFiltro); }, [mesFiltro]);
 
   function resetForm() {
@@ -254,7 +254,7 @@ export default function DespesasPage() {
                   <label className="field-label">Tipo de despesa <em>*</em></label>
                   <select className={`sel${erros.tipo?" err":""}`} value={tipo} onChange={e=>handleTipo(e.target.value)}>
                     <option value="">Selecionar…</option>
-                    {TIPOS_DESPESA.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
+                    {tiposDespesa.map(t=><option key={t.id} value={t.id}>{t.nome}</option>)}
                   </select>
                   {erros.tipo && <p className="field-err">⚠ {erros.tipo}</p>}
                 </div>
