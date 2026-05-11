@@ -2,8 +2,8 @@
 import { NextResponse } from "next/server";
 import { jwtVerify, SignJWT } from "jose";
 
-const SECRET      = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "xtelhas-secret-key-change-in-production-2025"
+const SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET não definido."); })()
 );
 const COOKIE_NAME  = "xtelhas_session";
 const SESSION_MINS = 10;

@@ -3,9 +3,10 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "xtelhas-secret-key-change-in-production-2025"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET não definido. Configure a variável de ambiente.");
+}
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 const COOKIE_NAME  = "xtelhas_session";
 const SESSION_MINS = 10; // expiração em minutos de inatividade
